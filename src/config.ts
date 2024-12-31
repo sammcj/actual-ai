@@ -22,3 +22,13 @@ export const googleApiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY ?? '';
 export const ollamaBaseURL = process.env.OLLAMA_BASE_URL ?? '';
 export const ollamaModel = process.env.OLLAMA_MODEL ?? 'phi3.5';
 export const dataDir = '/tmp/actual-ai/';
+
+// AI Category Group Settings
+export const createAiCategoryGroups = process.env.CREATE_AI_CATEGORY_GROUPS === 'true'
+export const aiCategoryGroupConfidence = parseInt(process.env.AI_CATEGORY_GROUP_CONFIDENCE ?? '8', 10)
+export const maxAiCategoryGroups = parseInt(process.env.MAX_AI_CATEGORY_GROUPS ?? '5', 10)
+
+// AI Rule Settings
+export const createAiRules = process.env.CREATE_AI_RULES === 'true'
+export const aiRuleConfidence = parseInt(process.env.AI_RULE_CONFIDENCE ?? '8', 10)
+export const maxAiRules = parseInt(process.env.MAX_AI_RULES ?? '10', 10)

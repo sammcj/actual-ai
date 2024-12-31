@@ -23,6 +23,23 @@ or any other compatible API.
 
 The app sends requests to the LLM to classify transactions based on their description, amount, and notes.
 
+#### 🎯 AI Category Group Creation
+
+The app can analyze uncategorized transactions and suggest new category groups based on patterns it identifies. New groups are prefixed with "ai-" for easy identification. This feature includes:
+- Analysis of existing category groups to avoid duplicates
+- Confidence threshold to ensure high-quality suggestions
+- Configurable limit on the number of groups to create
+- Automatic prefixing of AI-created groups with "ai-"
+
+#### 🔄 Automatic Rule Creation
+
+The app can analyze transaction patterns and create rules for automatic categorization. This feature includes:
+- Analysis of existing rules to avoid duplicates
+- Confidence threshold for rule creation
+- Configurable limit on the number of rules to create
+- Support for various rule conditions (payee, amount, notes)
+- Multiple rule stages (pre, default, post)
+
 #### 🔄 Sync accounts before classification
 
 #### 🕒 Classify transactions on a cron schedule
@@ -56,6 +73,14 @@ services:
       - CLASSIFY_ON_STARTUP=true # Whether to classify transactions on startup (don't wait for cron schedule)
       - SYNC_ACCOUNTS_BEFORE_CLASSIFY=false # Whether to sync accounts before classification
       - LLM_PROVIDER=openai # Can be "openai", "anthropic", "google-generative-ai" or "ollama"
+      # AI Category Group Creation Settings
+      - CREATE_AI_CATEGORY_GROUPS=false # Whether to enable AI category group creation
+      - AI_CATEGORY_GROUP_CONFIDENCE=8 # Minimum confidence level (1-10) required to create a group
+      - MAX_AI_CATEGORY_GROUPS=5 # Maximum number of AI-created category groups
+      # AI Rule Creation Settings
+      - CREATE_AI_RULES=false # Whether to enable AI rule creation
+      - AI_RULE_CONFIDENCE=8 # Minimum confidence level (1-10) required to create a rule
+      - MAX_AI_RULES=10 # Maximum number of rules to create
 #      - OPENAI_API_KEY= # optional. required if you want to use the OpenAI API
 #      - OPENAI_MODEL= # optional. required if you want to use a specific model, default is "gpt-4-turbo"
 #      - OPENAI_BASE_URL= # optional. required if you don't want to use the OpenAI API but OpenAI compatible API, ex: "http://ollama:11424/v1
@@ -68,7 +93,7 @@ services:
 #      - OLLAMA_MODEL=phi3.5 # optional. required if you want to use a Ollama specific model, default is "phi3.5"
 #      - OLLAMA_BASE_URL= # optional. required for ollama provider
 #      - ACTUAL_E2E_PASSWORD= # optional. required if you have E2E encryption
-#      - NODE_TLS_REJECT_UNAUTHORIZED=0 # optional. required if you have trouble connecting to Actual server 
+#      - NODE_TLS_REJECT_UNAUTHORIZED=0 # optional. required if you have trouble connecting to Actual server
 ```
 
 ### 📝 Notes from the author

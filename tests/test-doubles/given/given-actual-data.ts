@@ -7,15 +7,10 @@ import { TransactionEntity } from '@actual-app/api/@types/loot-core/types/models
 
 export default class GivenActualData {
   public static CATEGORY_GROCERIES = 'ff7be77b-40f4-4e9d-aea4-be6b8c431281';
-
   public static CATEGORY_TRAVEL = '541836f1-e756-4473-a5d0-6c1d3f06c7fa';
-
   public static CATEGORY_SALARY = '123836f1-e756-4473-a5d0-6c1d3f06c7fa';
-
   public static PAYEE_AIRBNB = '1';
-
   public static PAYEE_CARREFOUR = '2';
-
   public static PAYEE_GOOGLE = '3';
 
   public static createCategoryGroup(
@@ -23,11 +18,21 @@ export default class GivenActualData {
     name: string,
     categories: APICategoryEntity[],
   ): APICategoryGroupEntity {
-    return { id, name, categories };
+    return {
+      id,
+      name,
+      is_income: false,
+      categories,
+    };
   }
 
   public static createCategory(id: string, name: string, groupId: string): APICategoryEntity {
-    return { id, name, group_id: groupId };
+    return {
+      id,
+      name,
+      group_id: groupId,
+      is_income: false,
+    };
   }
 
   public static createPayee(id: string, name: string): APIPayeeEntity {
@@ -52,18 +57,19 @@ export default class GivenActualData {
       date,
       notes,
       payee,
+      transfer_id: undefined,
+      category: undefined,
     };
   }
 
   public static createSampleCategoryGroups(): APICategoryGroupEntity[] {
+    const groceriesCategory = this.createCategory(GivenActualData.CATEGORY_GROCERIES, 'Groceries', '1')
+    const travelCategory = this.createCategory(GivenActualData.CATEGORY_TRAVEL, 'Travel', '1')
+    const salaryCategory = this.createCategory(GivenActualData.CATEGORY_SALARY, 'Salary', '2');
+
     return [
-      this.createCategoryGroup('1', 'Usual Expenses', [
-        this.createCategory(GivenActualData.CATEGORY_GROCERIES, 'Groceries', '1'),
-        this.createCategory(GivenActualData.CATEGORY_TRAVEL, 'Travel', '1'),
-      ]),
-      this.createCategoryGroup('2', 'Income', [
-        this.createCategory(GivenActualData.CATEGORY_SALARY, 'Salary', '2'),
-      ]),
+      this.createCategoryGroup('1', 'Usual Expenses', [groceriesCategory, travelCategory]),
+      this.createCategoryGroup('2', 'Income', [salaryCategory]),
     ];
   }
 

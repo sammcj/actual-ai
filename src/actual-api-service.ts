@@ -4,7 +4,7 @@ import {
   APIPayeeEntity,
 } from '@actual-app/api/@types/loot-core/server/api-models';
 import { TransactionEntity } from '@actual-app/api/@types/loot-core/types/models';
-import { ActualApiServiceI } from './types';
+import { ActualApiServiceI, Rule, PayeeRule } from './types';
 
 class ActualApiService implements ActualApiServiceI {
   private actualApiClient: typeof import('@actual-app/api');
@@ -103,6 +103,71 @@ class ActualApiService implements ActualApiServiceI {
 
   public async runBankSync(): Promise<void> {
     await this.actualApiClient.runBankSync();
+  }
+
+  public async createCategoryGroup(name: string): Promise<string> {
+    const group = await this.actualApiClient.createCategoryGroup({
+      name,
+      is_income: false,
+    })
+    return group
+  }
+
+  public async getUncategorizedTransactions(): Promise<TransactionEntity[]> {
+    const transactions = await this.getTransactions()
+    return transactions.filter(
+      (transaction) => !transaction.category
+        && (transaction.transfer_id === null || transaction.transfer_id === undefined)
+        && transaction.starting_balance_flag !== true
+        && transaction.imported_payee !== null
+        && transaction.imported_payee !== ''
+    )
+  }
+
+  private convertToRule(rule: any): Rule {
+    return {
+      id: rule.id,
+      stage: rule.stage || 'default',
+      conditionsOp: rule.conditionsOp,
+      conditions: rule.conditions,
+      actions: rule.actions,
+    }
+  }
+
+  private convertToPayeeRule(rule: any): PayeeRule {
+    return {
+      ...this.convertToRule(rule),
+      payee_id: rule.payee_id,
+    }
+  }
+
+  public async getRules(): Promise<Rule[]> {
+    const rules = await this.actualApiClient.getRules()
+    return rules.map(rule => this.convertToRule(rule))
+  }
+
+  public async createRule(rule: Partial<Rule>): Promise<Rule> {
+    const createdRule = await this.actualApiClient.createRule({
+      ...rule,
+      stage: rule.stage || 'default',
+    })
+    return this.convertToRule(createdRule)
+  }
+
+  public async getPayeeRules(payeeId: string): Promise<PayeeRule[]> {
+    const rules = await this.actualApiClient.getPayeeRules(payeeId)
+    return rules.map(rule => this.convertToPayeeRule(rule))
+  }
+
+  public async createPayeeRule(rule: Partial<PayeeRule>): Promise<PayeeRule> {
+    if (!rule.payee_id) {
+      throw new Error('payee_id is required for payee rules')
+    }
+    const createdRule = await this.actualApiClient.createRule({
+      ...rule,
+      stage: rule.stage || 'default',
+    })
+    return this.convertToPayeeRule(createdRule)
   }
 }
 
