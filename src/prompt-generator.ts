@@ -1,36 +1,38 @@
-import { APICategoryGroupEntity, APIPayeeEntity } from '@actual-app/api/@types/loot-core/server/api-models';
-import { TransactionEntity } from '@actual-app/api/@types/loot-core/types/models';
-import { PromptGeneratorI, Rule } from './types';
+import { APICategoryGroupEntity, APIPayeeEntity } from '@actual-app/api/@types/loot-core/server/api-models'
+import { TransactionEntity } from '@actual-app/api/@types/loot-core/types/models'
+import { PromptGeneratorI, Rule } from './types'
 
-class PromptGenerator implements PromptGeneratorI {
+export default class PromptGenerator implements PromptGeneratorI {
   generate(
     categoryGroups: APICategoryGroupEntity[],
     transaction: TransactionEntity,
     payees: APIPayeeEntity[],
   ): string {
-    let prompt = 'I want to categorize the given bank transactions into the following categories:\n';
+    const lines = ['I want to categorize the given bank transactions into the following categories:']
+
     categoryGroups.forEach((categoryGroup) => {
       categoryGroup.categories.forEach((category) => {
-        prompt += `* ${category.name} (${categoryGroup.name}) (ID: "${category.id}") \n`;
-      });
-    });
+        lines.push(`* ${category.name} (${categoryGroup.name}) (ID: "${category.id}")`)
+      })
+    })
 
-    const payeeName = payees.find((payee) => payee.id === transaction.payee)?.name;
+    const payeeName = payees.find((payee) => payee.id === transaction.payee)?.name
 
-    prompt += 'Please categorize the following transaction: \n';
-    prompt += `* Amount: ${Math.abs(transaction.amount)}\n`;
-    prompt += `* Type: ${transaction.amount > 0 ? 'Income' : 'Outcome'}\n`;
-    prompt += `* Description: ${transaction.notes ?? ''}\n`;
+    lines.push('Please categorize the following transaction:')
+    lines.push(`* Amount: ${Math.abs(transaction.amount)}`)
+    lines.push(`* Type: ${transaction.amount > 0 ? 'Income' : 'Outcome'}`)
+    lines.push(`* Description: ${transaction.notes ?? ''}`)
+
     if (payeeName && payeeName !== transaction.imported_payee) {
-      prompt += `* Payee: ${payeeName}\n`;
-      prompt += `* Payee RAW: ${transaction.imported_payee}\n`;
+      lines.push(`* Payee: ${payeeName}`)
+      lines.push(`* Payee RAW: ${transaction.imported_payee}`)
     } else {
-      prompt += `* Payee: ${transaction.imported_payee}\n`;
+      lines.push(`* Payee: ${transaction.imported_payee}`)
     }
 
-    prompt += 'ANSWER BY A CATEGORY ID. DO NOT WRITE THE WHOLE SENTENCE. Do not guess, if you don\'t know the answer, return "idk".';
+    lines.push('ANSWER BY A CATEGORY ID. DO NOT WRITE THE WHOLE SENTENCE. Do not guess, if you don\'t know the answer, return "idk".')
 
-    return prompt
+    return lines.join('\n')
   }
 
   generateCategoryGroupAnalysis(
@@ -39,32 +41,41 @@ class PromptGenerator implements PromptGeneratorI {
     confidenceThreshold: number,
     maxGroups: number,
   ): string {
-    let prompt = 'Analyze the following uncategorized transactions and suggest new category groups.\n\n'
+    const lines = [
+      'Analyze the following uncategorized transactions and suggest new category groups.',
+      '',
+      'Current category groups:',
+    ]
 
-    prompt += 'Current category groups:\n'
     categoryGroups.forEach((group) => {
-      prompt += `* ${group.name}\n`
+      lines.push(`* ${group.name}`)
     })
 
-    prompt += '\nUncategorized transactions:\n'
+    lines.push('', 'Uncategorized transactions:')
+
     transactions.forEach((transaction) => {
-      prompt += `* Amount: ${Math.abs(transaction.amount)} | Type: ${transaction.amount > 0 ? 'Income' : 'Outcome'} | Payee: ${transaction.imported_payee} | Description: ${transaction.notes ?? ''}\n`
+      lines.push(`* Amount: ${Math.abs(transaction.amount)} | Type: ${transaction.amount > 0 ? 'Income' : 'Outcome'} | Payee: ${transaction.imported_payee} | Description: ${transaction.notes ?? ''}`)
     })
 
-    prompt += `\nBased on the transactions above and existing category groups, suggest up to ${maxGroups} new category groups.`
-    prompt += `\nOnly suggest groups if you are confident they would be useful (confidence threshold: ${confidenceThreshold}/10).`
-    prompt += '\nDo not suggest groups that are similar to existing ones.'
-    prompt += '\nRespond in JSON format like this:'
-    prompt += `\n[
-  {
-    "name": "group name without ai- prefix",
-    "confidence": number from 1-10,
-    "reason": "brief explanation why this group would be useful"
-  }
-]\n`
-    prompt += '\nIf no new groups are needed or confidence threshold is not met, return an empty array: []'
+    lines.push(
+      '',
+      `Based on the transactions above and existing category groups, suggest up to ${maxGroups} new category groups.`,
+      `Only suggest groups if you are confident they would be useful (confidence threshold: ${confidenceThreshold}/10).`,
+      'Do not suggest groups that are similar to existing ones.',
+      'IMPORTANT: Your response must be valid JSON. Do not include any explanatory text outside the JSON array.',
+      'Example response format:',
+      '[',
+      '  {',
+      '    "name": "group name without ai- prefix",',
+      '    "confidence": 9,',
+      '    "reason": "brief explanation why this group would be useful"',
+      '  }',
+      ']',
+      '',
+      'If no new groups are needed or confidence threshold is not met, return exactly: []',
+    )
 
-    return prompt
+    return lines.join('\n')
   }
 
   generateRuleAnalysis(
@@ -73,48 +84,65 @@ class PromptGenerator implements PromptGeneratorI {
     confidenceThreshold: number,
     maxRules: number,
   ): string {
-    let prompt = 'Analyze the following transactions and suggest new rules for automatic categorization.\n\n'
+    const lines = [
+      'Analyze the following transactions and suggest new rules for automatic categorization.',
+      '',
+      'Current rules:',
+    ]
 
-    prompt += 'Current rules:\n'
     existingRules.forEach((rule) => {
-      prompt += `* Stage: ${rule.stage} | Conditions: ${JSON.stringify(rule.conditions)} | Actions: ${JSON.stringify(rule.actions)}\n`
+      lines.push(`* Stage: ${rule.stage} | Conditions: ${JSON.stringify(rule.conditions)} | Actions: ${JSON.stringify(rule.actions)}`)
     })
 
-    prompt += '\nTransactions to analyze:\n'
+    lines.push('', 'Transactions to analyze:')
+
     transactions.forEach((transaction) => {
-      prompt += `* Amount: ${Math.abs(transaction.amount)} | Type: ${transaction.amount > 0 ? 'Income' : 'Outcome'} | Payee: ${transaction.imported_payee} | Description: ${transaction.notes ?? ''}\n`
+      lines.push(`* Amount: ${Math.abs(transaction.amount)} | Type: ${transaction.amount > 0 ? 'Income' : 'Outcome'} | Payee: ${transaction.imported_payee} | Description: ${transaction.notes ?? ''}`)
     })
 
-    prompt += `\nBased on the transactions above and existing rules, suggest up to ${maxRules} new rules.`
-    prompt += `\nOnly suggest rules if you are confident they would be useful (confidence threshold: ${confidenceThreshold}/10).`
-    prompt += '\nDo not suggest rules that are similar to existing ones.'
-    prompt += '\nRespond in JSON format like this:'
-    prompt += `\n[
-  {
-    "stage": "pre" | "default" | "post",
-    "conditionsOp": "and" | "or",
-    "conditions": [
-      {
-        "field": "payee" | "amount" | "notes",
-        "op": "is" | "contains" | "startsWith" | "endsWith" | "gt" | "lt",
-        "value": "string"
-      }
-    ],
-    "actions": [
-      {
-        "field": "category",
-        "op": "set",
-        "value": "category-id"
-      }
-    ],
-    "confidence": number from 1-10,
-    "reason": "brief explanation why this rule would be useful"
-  }
-]\n`
-    prompt += '\nIf no new rules are needed or confidence threshold is not met, return an empty array: []';
+    lines.push(
+      '',
+      `Based on the transactions above and existing rules, suggest up to ${maxRules} new rules.`,
+      `Only suggest rules if you are confident they would be useful (confidence threshold: ${confidenceThreshold}/10).`,
+      'Do not suggest rules that are similar to existing ones.',
+      'IMPORTANT: Your response must be valid JSON. Do not include any explanatory text outside the JSON array.',
+      'Example response format:',
+      '[',
+      '  {',
+      '    "stage": "default",',
+      '    "conditionsOp": "and",',
+      '    "conditions": [',
+      '      {',
+      '        "field": "payee",',
+      '        "op": "contains",',
+      '        "value": "example-value"',
+      '      }',
+      '    ],',
+      '    "actions": [',
+      '      {',
+      '        "field": "category",',
+      '        "op": "set",',
+      '        "value": "actual-category-id-from-list-above"',
+      '      }',
+      '    ],',
+      '    "confidence": 9,',
+      '    "reason": "Example reason for the rule"',
+      '  }',
+      ']',
+      '',
+      'Rules:',
+      '1. Response must be a valid JSON array',
+      '2. stage must be exactly "default"',
+      '3. conditionsOp must be exactly "and" or "or"',
+      '4. field must be exactly "payee", "amount", or "notes"',
+      '5. op must be exactly "is", "contains", "startsWith", "endsWith", "gt", or "lt"',
+      '6. value must be a string',
+      '7. confidence must be a number between 1 and 10',
+      '8. category-id must be one of the actual category IDs shown above',
+      '',
+      'If no new rules are needed or confidence threshold is not met, return exactly: []',
+    )
 
-    return prompt;
+    return lines.join('\n')
   }
 }
-
-export default PromptGenerator;
