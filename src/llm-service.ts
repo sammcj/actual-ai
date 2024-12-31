@@ -15,9 +15,10 @@ export default class LlmService implements LlmServiceI {
       model: this.model,
       prompt,
       temperature: 0.1,
-      maxTokens: 35,
+      maxTokens: 1000, // Increased to allow for proper JSON responses
     });
 
-    return text.replace(/(\r\n|\n|\r|"|')/gm, '');
+    // Only trim whitespace but preserve quotes and structure
+    return text.trim();
   }
 }
