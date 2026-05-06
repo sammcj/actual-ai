@@ -129,6 +129,21 @@ Available features:
 - `rerunMissedTransactions` - Re-process transactions previously marked as unclassified
 - `disableRateLimiter` - Disable Rate Limiter
 
+## Rate Limit Overrides
+
+By default each provider gets a conservative request/token-per-minute limit. You can override these per deployment with two environment variables — useful when your plan's actual limits differ from the built-in defaults (e.g. Google AI Free Tier sits well below the default 300 RPM):
+
+- `REQUESTS_PER_MINUTE` — proactive request-per-minute cap
+- `TOKENS_PER_MINUTE` — proactive token-per-minute cap
+
+Each variable supports three states:
+
+- **unset** (or empty) — fall back to the built-in provider default
+- **`0`** — disable that axis of proactive rate limiting (the provider's own 429 responses still drive reactive backoff)
+- **positive number** — use as the custom limit
+
+To turn off rate limiting entirely, add `disableRateLimiter` to your `FEATURES` array instead.
+
 ## OpenRouter Tool Calling
 
 By default, model tool-calling is disabled when `LLM_PROVIDER=openrouter` because some gateway/model combinations can return unstable tool-call responses. You can re-enable it with:
