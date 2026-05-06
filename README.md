@@ -68,6 +68,9 @@ services:
   actual-ai:
     image: docker.io/sakowicz/actual-ai:latest
     restart: unless-stopped
+    depends_on:
+      actual_server:
+        condition: service_healthy
     environment:
       ACTUAL_SERVER_URL: http://actual_server:5006
       ACTUAL_PASSWORD: your_actual_password
